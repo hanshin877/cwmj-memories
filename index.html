@@ -204,7 +204,7 @@
   /* ── 라이트박스 ── */
   #lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 1000; align-items: center; justify-content: center; overflow: hidden; }
   #lightbox.open { display: flex; }
-  #lightbox img { max-width: 92vw; max-height: 88vh; border-radius: 10px; object-fit: contain; touch-action: none; user-select: none; -webkit-user-drag: none; cursor: zoom-in; will-change: transform; }
+  #lightbox img { border-radius: 10px; touch-action: none; user-select: none; -webkit-user-drag: none; cursor: zoom-in; will-change: transform; display: block; }
   #lightbox img.zoomed { cursor: grab; }
   #lightbox img.grabbing { cursor: grabbing; }
   .lb-close { position: absolute; top: 16px; right: 20px; color: white; background: rgba(255,255,255,0.15); border: none; border-radius: 20px; padding: 4px 16px; font-size: 1rem; cursor: pointer; z-index: 2; }
@@ -1071,41 +1071,57 @@ const lbEl  = document.getElementById('lightbox');
 const lbImg = document.getElementById('lbImg');
 
 // 줌 상태
-const lbZ = { scale:1, tx:0, ty:0,
+const lbZ = { scale:1, fitScale:1, tx:0, ty:0,
                drag:false, dsx:0, dsy:0, dtx:0, dty:0,
                pinch:false, p0dist:0, p0scale:1, p0cx:0, p0cy:0, p0tx:0, p0ty:0,
                lastTap:0, lastTapX:0, lastTapY:0,
                swipeX:0, swiping:false };
 
+// 이미지 로드 시 fitScale 계산 (viewport에 맞게 축소, 절대 업스케일 안 함)
+lbImg.addEventListener('load', () => {
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const nw = lbImg.naturalWidth,  nh = lbImg.naturalHeight;
+  lbZ.fitScale = (nw > 0 && nh > 0)
+    ? Math.min(vw * 0.92 / nw, vh * 0.88 / nh, 1.0)
+    : 1.0;
+  lbZ.scale = lbZ.fitScale; lbZ.tx = 0; lbZ.ty = 0;
+  lbImg.style.visibility = 'visible';
+  lbApply(false);
+});
+
 function lbApply(transition = false) {
   lbImg.style.transition = transition ? 'transform .25s ease' : 'none';
   lbImg.style.transform  = `translate(${lbZ.tx}px,${lbZ.ty}px) scale(${lbZ.scale})`;
-  const zoomed = lbZ.scale > 1.05;
+  const zoomed = lbZ.scale > lbZ.fitScale * 1.05;
   lbImg.classList.toggle('zoomed', zoomed && !lbZ.drag);
   document.getElementById('lbPrev').style.opacity = zoomed ? '0.25' : '1';
   document.getElementById('lbNext').style.opacity = zoomed ? '0.25' : '1';
   document.getElementById('lbHint').style.display  = zoomed ? 'none' : '';
 }
 function lbClamp() {
-  if (lbZ.scale <= 1) { lbZ.tx = 0; lbZ.ty = 0; return; }
-  const mx = (lbZ.scale - 1) * window.innerWidth  / 2;
-  const my = (lbZ.scale - 1) * window.innerHeight / 2;
+  if (lbZ.scale <= lbZ.fitScale * 1.001) { lbZ.tx = 0; lbZ.ty = 0; return; }
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const sw = lbImg.naturalWidth  * lbZ.scale;
+  const sh = lbImg.naturalHeight * lbZ.scale;
+  const mx = Math.max(0, (sw - vw) / 2);
+  const my = Math.max(0, (sh - vh) / 2);
   lbZ.tx = Math.max(-mx, Math.min(mx, lbZ.tx));
   lbZ.ty = Math.max(-my, Math.min(my, lbZ.ty));
 }
 function lbResetZoom(anim = true) {
-  lbZ.scale = 1; lbZ.tx = 0; lbZ.ty = 0;
+  lbZ.scale = lbZ.fitScale; lbZ.tx = 0; lbZ.ty = 0;
   lbApply(anim);
 }
 // 화면 좌표 (pcx,pcy) 기준으로 확대
 function lbZoomAt(pcx, pcy, newScale, anim = false) {
-  newScale = Math.max(1, Math.min(8, newScale));
+  const maxScale = Math.max(1.0, lbZ.fitScale * 8);
+  newScale = Math.max(lbZ.fitScale, Math.min(maxScale, newScale));
   const r  = newScale / lbZ.scale;
   const vw = window.innerWidth, vh = window.innerHeight;
   lbZ.tx   = lbZ.tx * r + (pcx - vw/2) * (1 - r);
   lbZ.ty   = lbZ.ty * r + (pcy - vh/2) * (1 - r);
   lbZ.scale = newScale;
-  if (lbZ.scale <= 1.01) { lbZ.scale = 1; lbZ.tx = 0; lbZ.ty = 0; }
+  if (lbZ.scale <= lbZ.fitScale * 1.01) { lbZ.scale = lbZ.fitScale; lbZ.tx = 0; lbZ.ty = 0; }
   lbClamp();
   lbApply(anim);
 }
@@ -1122,15 +1138,15 @@ lbEl.addEventListener('touchstart', e => {
     lbZ.dsx = t.clientX; lbZ.dsy = t.clientY;
     lbZ.dtx = lbZ.tx;    lbZ.dty = lbZ.ty;
     lbZ.swipeX  = t.clientX;
-    lbZ.swiping = lbZ.scale <= 1.05;
+    lbZ.swiping = lbZ.scale <= lbZ.fitScale * 1.05;
 
     // 더블탭 감지
     const now = Date.now();
     const dx  = t.clientX - lbZ.lastTapX, dy = t.clientY - lbZ.lastTapY;
     if (now - lbZ.lastTap < 280 && Math.abs(dx) < 40 && Math.abs(dy) < 40) {
       lbZ.lastTap = 0;
-      if (lbZ.scale > 1.05) lbResetZoom(true);
-      else lbZoomAt(t.clientX, t.clientY, 3, true);
+      if (lbZ.scale > lbZ.fitScale * 1.05) lbResetZoom(true);
+      else lbZoomAt(t.clientX, t.clientY, Math.max(1.0, lbZ.fitScale * 2.5), true);
     } else {
       lbZ.lastTap = now; lbZ.lastTapX = t.clientX; lbZ.lastTapY = t.clientY;
     }
@@ -1155,18 +1171,19 @@ lbEl.addEventListener('touchmove', e => {
     const dist = Math.sqrt(dx*dx + dy*dy);
     const cx  = (ts[0].clientX + ts[1].clientX) / 2;
     const cy  = (ts[0].clientY + ts[1].clientY) / 2;
-    const newScale = Math.max(1, Math.min(8, lbZ.p0scale * dist / lbZ.p0dist));
+    const maxScale = Math.max(1.0, lbZ.fitScale * 8);
+    const newScale = Math.max(lbZ.fitScale, Math.min(maxScale, lbZ.p0scale * dist / lbZ.p0dist));
     const r = newScale / lbZ.p0scale;
     const vw = window.innerWidth, vh = window.innerHeight;
     lbZ.tx    = lbZ.p0tx * r + (lbZ.p0cx - vw/2) * (1 - r) + (cx - lbZ.p0cx);
     lbZ.ty    = lbZ.p0ty * r + (lbZ.p0cy - vh/2) * (1 - r) + (cy - lbZ.p0cy);
     lbZ.scale = newScale;
-    if (lbZ.scale <= 1.01) { lbZ.scale = 1; lbZ.tx = 0; lbZ.ty = 0; }
+    if (lbZ.scale <= lbZ.fitScale * 1.01) { lbZ.scale = lbZ.fitScale; lbZ.tx = 0; lbZ.ty = 0; }
     lbClamp(); lbApply();
   } else if (lbZ.drag && ts.length === 1) {
     const t  = ts[0];
     const mx = t.clientX - lbZ.dsx, my = t.clientY - lbZ.dsy;
-    if (lbZ.scale > 1.05) {
+    if (lbZ.scale > lbZ.fitScale * 1.05) {
       e.preventDefault();
       lbZ.tx = lbZ.dtx + mx; lbZ.ty = lbZ.dty + my;
       lbClamp(); lbApply();
@@ -1177,7 +1194,7 @@ lbEl.addEventListener('touchmove', e => {
 lbEl.addEventListener('touchend', e => {
   if (e.touches.length === 0) {
     // 스와이프 네비게이션 (1배율일 때만)
-    if (lbZ.swiping && lbZ.scale <= 1.05) {
+    if (lbZ.swiping && lbZ.scale <= lbZ.fitScale * 1.05) {
       const ch  = e.changedTouches[0];
       const dx  = ch.clientX - lbZ.swipeX;
       const dy  = ch.clientY - lbZ.dsy;
@@ -1210,7 +1227,7 @@ lbEl.addEventListener('mousedown', e => {
 });
 document.addEventListener('mousemove', e => {
   if (!lbZ.drag || !lbEl.classList.contains('open')) return;
-  if (lbZ.scale > 1.05) {
+  if (lbZ.scale > lbZ.fitScale * 1.05) {
     lbZ.tx = lbZ.dtx + (e.clientX - lbZ.dsx);
     lbZ.ty = lbZ.dty + (e.clientY - lbZ.dsy);
     lbClamp(); lbApply();
@@ -1219,7 +1236,7 @@ document.addEventListener('mousemove', e => {
 document.addEventListener('mouseup', e => {
   if (!lbZ.drag) return;
   lbImg.classList.remove('grabbing');
-  if (lbZ.scale <= 1.05) {
+  if (lbZ.scale <= lbZ.fitScale * 1.05) {
     const dx = e.clientX - lbZ.swipeX;
     if (Math.abs(dx) > 60) dx < 0 ? moveLb(1) : moveLb(-1);
   }
@@ -1227,8 +1244,8 @@ document.addEventListener('mouseup', e => {
 });
 
 lbImg.addEventListener('dblclick', e => {
-  if (lbZ.scale > 1.05) lbResetZoom(true);
-  else lbZoomAt(e.clientX, e.clientY, 3, true);
+  if (lbZ.scale > lbZ.fitScale * 1.05) lbResetZoom(true);
+  else lbZoomAt(e.clientX, e.clientY, Math.max(1.0, lbZ.fitScale * 2.5), true);
 });
 
 // ── 공통 함수 ────────────────────────────────────────────────────────
@@ -1237,7 +1254,8 @@ function updateLbCounter() {
 }
 function openLb(idx) {
   lbPhotoIdx = idx;
-  lbResetZoom(false);
+  lbZ.fitScale = 1; lbZ.scale = 1; lbZ.tx = 0; lbZ.ty = 0;
+  lbImg.style.visibility = 'hidden';
   lbImg.src = lbPhotos[idx];
   lbEl.classList.add('open');
   updateLbCounter();
@@ -1251,7 +1269,8 @@ function closeLb() {
   lbResetZoom(false);
 }
 function moveLb(dir) {
-  lbResetZoom(false);
+  lbZ.fitScale = 1; lbZ.scale = 1; lbZ.tx = 0; lbZ.ty = 0;
+  lbImg.style.visibility = 'hidden';
   lbPhotoIdx = (lbPhotoIdx + dir + lbPhotos.length) % lbPhotos.length;
   lbImg.src  = lbPhotos[lbPhotoIdx];
   updateLbCounter();
