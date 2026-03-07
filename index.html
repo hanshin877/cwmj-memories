@@ -130,15 +130,21 @@
   .upload-open-btn { background: linear-gradient(135deg, var(--mj), var(--cw)); color: white; border: none; border-radius: 20px; padding: 8px 18px; font-size: .78rem; font-weight: 800; cursor: pointer; font-family: 'Nanum Gothic', sans-serif; box-shadow: var(--shadow); white-space: nowrap; transition: opacity .2s; }
   .upload-open-btn:hover { opacity: .85; }
 
-  /* 연도·월 네비 */
-  .album-nav { background: white; border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px; margin-bottom: 16px; }
-  .album-year-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
-  .album-year-tab { padding: 6px 16px; border-radius: 14px; border: 2px solid var(--mj-mid); background: white; color: var(--mj); font-size: .8rem; font-weight: 800; cursor: pointer; font-family: 'Nanum Gothic', sans-serif; transition: all .2s; }
-  .album-year-tab.active { background: linear-gradient(135deg, var(--mj), var(--cw)); color: white; border-color: transparent; }
+  /* 연도·월 네비 (전체 너비 sticky) */
+  .album-nav-sticky {
+    position: sticky; top: 0; z-index: 200;
+    background: white;
+    border-bottom: 2px solid #FFE4EE;
+    box-shadow: 0 3px 16px rgba(180,100,150,0.15);
+    padding: 10px 16px 10px;
+  }
+  .album-nav-inner { max-width: 780px; margin: 0 auto; }
+  .album-year-tabs  { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
   .album-month-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
-  .album-month-tab { padding: 5px 13px; border-radius: 12px; border: 2px solid #EEE; background: white; color: #999; font-size: .76rem; font-weight: 800; cursor: pointer; font-family: 'Nanum Gothic', sans-serif; transition: all .2s; }
+  .album-year-tab { padding: 5px 15px; border-radius: 14px; border: 2px solid var(--mj-mid); background: white; color: var(--mj); font-size: .8rem; font-weight: 800; cursor: pointer; font-family: 'Nanum Gothic', sans-serif; transition: all .2s; }
+  .album-year-tab.active { background: linear-gradient(135deg, var(--mj), var(--cw)); color: white; border-color: transparent; }
+  .album-month-tab { padding: 4px 12px; border-radius: 12px; border: 2px solid #EEE; background: white; color: #999; font-size: .76rem; font-weight: 800; cursor: pointer; font-family: 'Nanum Gothic', sans-serif; transition: all .2s; }
   .album-month-tab.active { background: var(--mj-light); color: var(--mj); border-color: var(--mj-mid); }
-  .album-nav-empty { color: var(--text-light); font-size: .82rem; text-align: center; padding: 10px 0; }
 
   /* 날짜 섹션 */
   .album-body { display: flex; flex-direction: column; gap: 24px; }
@@ -272,20 +278,24 @@
   </div>
 </div>
 
-<!-- ════ 포토앨범 ════ -->
+<!-- ════ 포토앨범 제목 ════ -->
 <div class="album-section">
   <div class="album-title-bar">
     <h2 class="album-title">📸 포토앨범</h2>
     <button class="upload-open-btn" onclick="openUpload()">+ 사진 업로드</button>
   </div>
+</div>
 
-  <!-- 연도·월 네비 -->
-  <div class="album-nav" id="albumNav">
+<!-- 연도·월 네비 (전체 너비 sticky) -->
+<div class="album-nav-sticky" id="albumNav" style="display:none">
+  <div class="album-nav-inner">
     <div class="album-year-tabs"  id="albumYearTabs"></div>
     <div class="album-month-tabs" id="albumMonthTabs"></div>
   </div>
+</div>
 
-  <!-- 사진 목록 -->
+<!-- 사진 목록 -->
+<div class="album-section">
   <div class="album-body" id="albumBody">
     <div class="album-empty">📷 사진을 업로드하면 여기에 표시됩니다</div>
   </div>
@@ -735,11 +745,13 @@ function renderPhotoAlbum() {
   const bodyEl      = document.getElementById('albumBody');
 
   if (!years.length) {
-    yearTabsEl.innerHTML  = '<div class="album-nav-empty">업로드된 사진이 없습니다</div>';
+    document.getElementById('albumNav').style.display = 'none';
+    yearTabsEl.innerHTML  = '';
     monthTabsEl.innerHTML = '';
     bodyEl.innerHTML      = '<div class="album-empty">📷 위의 "+ 사진 업로드" 버튼으로 첫 사진을 올려보세요!</div>';
     return;
   }
+  document.getElementById('albumNav').style.display = '';
 
   if (!activeYear || !byYear[activeYear]) activeYear = years[0];
   const months = Object.keys(byYear[activeYear]).sort().reverse();
