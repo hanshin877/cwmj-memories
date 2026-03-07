@@ -1,0 +1,45 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'index.html'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout main (index.html only)
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            index.html
+          sparse-checkout-cone-mode: false
+
+      - name: Deploy index.html to gh-pages
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          mkdir -p /tmp/deploy
+          cp index.html /tmp/deploy/index.html
+          touch /tmp/deploy/.nojekyll
+
+          git sparse-checkout disable
+
+          git fetch origin gh-pages 2>/dev/null || true
+          git checkout gh-pages 2>/dev/null || git checkout --orphan gh-pages
+
+          cp /tmp/deploy/index.html ./index.html
+          cp /tmp/deploy/.nojekyll ./.nojekyll
+
+          git add index.html .nojekyll
+          git diff --cached --quiet && echo "No changes" && exit 0
+          git commit -m "Deploy index.html [skip ci]"
+          git push origin gh-pages
