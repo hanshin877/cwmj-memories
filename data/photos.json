@@ -57,5 +57,18 @@
       "photos/20260227_both_1772892116751/image_0.jpg",
       "photos/20260227_both_1772892116751/image_1.jpg"
     ]
+  },
+  {
+    "id": "1772892171321",
+    "date": "2026-02-27",
+    "who": "cw",
+    "title": "",
+    "desc": "",
+    "files": [
+      "photos/20260227_cw_1772892171321/image_0.jpg",
+      "photos/20260227_cw_1772892171321/image_1.jpg",
+      "photos/20260227_cw_1772892171321/image_2.jpg",
+      "photos/20260227_cw_1772892171321/image_3.jpg"
+    ]
   }
 ]
