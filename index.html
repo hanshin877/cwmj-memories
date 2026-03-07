@@ -848,7 +848,99 @@ function selectUploadWho(btn) {
   btn.classList.add('selected'); uploadWho = btn.dataset.who;
 }
 
-// 파일 선택 / 드롭
+// ════════════════════════════════════════
+//  EXIF 날짜 파싱 (외부 라이브러리 없이)
+// ════════════════════════════════════════
+function getExifDate(file) {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onerror = () => resolve(null);
+    reader.onload = e => {
+      try {
+        const view = new DataView(e.target.result);
+        if (view.getUint16(0) !== 0xFFD8) { resolve(null); return; } // JPEG 아님
+
+        let pos = 2;
+        while (pos + 4 <= view.byteLength) {
+          const marker = view.getUint16(pos);
+          if (marker === 0xFFDA) break;                    // SOS – 이후엔 메타 없음
+          if (marker < 0xFF00) { pos++; continue; }
+          const segLen = view.getUint16(pos + 2);
+
+          if (marker === 0xFFE1 && segLen > 10) {          // APP1
+            // "Exif\0\0" 확인
+            if (view.getUint32(pos + 4) === 0x45786966 &&
+                view.getUint16(pos + 8) === 0x0000) {
+              const tb = pos + 10;                         // TIFF 헤더 시작
+              const le = view.getUint16(tb) === 0x4949;   // 리틀엔디언?
+              if (view.getUint16(tb + 2, le) === 0x002A) {
+                const ifd0 = tb + view.getUint32(tb + 4, le);
+                resolve(_ifdDate(view, tb, ifd0, le));
+                return;
+              }
+            }
+          }
+          pos += 2 + segLen;
+        }
+        resolve(null);
+      } catch { resolve(null); }
+    };
+    // 앞 64KB만 읽으면 EXIF 충분
+    reader.readAsArrayBuffer(file.slice(0, 65536));
+  });
+}
+
+function _ifdDate(view, tb, ifdPos, le) {
+  if (ifdPos + 2 > view.byteLength) return null;
+  const n = view.getUint16(ifdPos, le);
+  let fallback = null, exifPtr = 0;
+
+  for (let i = 0; i < n; i++) {
+    const ep = ifdPos + 2 + i * 12;
+    if (ep + 12 > view.byteLength) break;
+    const tag = view.getUint16(ep, le);
+    if      (tag === 0x8769) exifPtr  = view.getUint32(ep + 8, le); // ExifSubIFD
+    else if (tag === 0x0132) fallback = _readDateStr(view, tb, ep, le); // DateTime
+  }
+  // ExifSubIFD에서 DateTimeOriginal 우선
+  if (exifPtr) {
+    const sub = _subIfdDate(view, tb, tb + exifPtr, le);
+    if (sub) return sub;
+  }
+  return fallback;
+}
+
+function _subIfdDate(view, tb, ifdPos, le) {
+  if (ifdPos + 2 > view.byteLength) return null;
+  const n = view.getUint16(ifdPos, le);
+  let orig = null, dig = null;
+  for (let i = 0; i < n; i++) {
+    const ep = ifdPos + 2 + i * 12;
+    if (ep + 12 > view.byteLength) break;
+    const tag = view.getUint16(ep, le);
+    if      (tag === 0x9003) orig = _readDateStr(view, tb, ep, le); // DateTimeOriginal
+    else if (tag === 0x9004) dig  = _readDateStr(view, tb, ep, le); // DateTimeDigitized
+  }
+  return orig || dig;
+}
+
+function _readDateStr(view, tb, ep, le) {
+  const count = view.getUint32(ep + 4, le);
+  const ptr   = count <= 4 ? ep + 8 : tb + view.getUint32(ep + 8, le);
+  if (ptr + 10 > view.byteLength) return null;
+  let s = '';
+  for (let j = 0; j < Math.min(count, 20); j++) {
+    const c = view.getUint8(ptr + j);
+    if (c === 0) break;
+    s += String.fromCharCode(c);
+  }
+  // "YYYY:MM:DD HH:MM:SS" → "YYYY-MM-DD"
+  return /^\d{4}:\d{2}:\d{2}/.test(s) ? s.slice(0, 10).replace(/:/g, '-') : null;
+}
+
+// ════════════════════════════════════════
+//  파일 선택 / 드롭
+// ════════════════════════════════════════
 const fileInput = document.getElementById('fileInput');
 const dropZone  = document.getElementById('fileDropZone');
 
@@ -860,9 +952,13 @@ dropZone.addEventListener('drop', e => {
   addFiles(e.dataTransfer.files);
 });
 
-function addFiles(fileList) {
-  Array.from(fileList).forEach(f => {
-    if (!f.type.startsWith('image/')) return;
+async function addFiles(fileList) {
+  const imgs = Array.from(fileList).filter(f => f.type.startsWith('image/'));
+  if (!imgs.length) return;
+
+  const isFirst = selectedFiles.length === 0;
+
+  imgs.forEach(f => {
     selectedFiles.push(f);
     const idx = selectedFiles.length - 1;
     const url = URL.createObjectURL(f);
@@ -871,6 +967,19 @@ function addFiles(fileList) {
     div.innerHTML = `<img src="${url}" alt=""><button class="rm-btn" onclick="removeFile(${idx})">✕</button>`;
     document.getElementById('filePreviewGrid').appendChild(div);
   });
+
+  // 첫 번째 배치일 때만 EXIF 날짜 자동 설정
+  if (isFirst) {
+    // 여러 파일 중 유효한 날짜가 있는 첫 번째 파일 사용
+    for (const f of imgs) {
+      const date = await getExifDate(f);
+      if (date) {
+        document.getElementById('uploadDate').value = date;
+        showToast(`📅 날짜 자동 감지: ${date.replace(/-/g, '.')}`, 'ok');
+        break;
+      }
+    }
+  }
 }
 function removeFile(idx) {
   selectedFiles.splice(idx, 1);
