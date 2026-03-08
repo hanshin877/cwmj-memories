@@ -301,6 +301,7 @@
   </div>
 </header>
 
+<div id="mainContent" style="display:none">
 <!-- 캘린더 -->
 <div class="cal-nav">
   <button class="cal-nav-btn" id="prevBtn">‹</button>
@@ -348,6 +349,8 @@
     <div class="album-empty">📷 사진을 업로드하면 여기에 표시됩니다</div>
   </div>
 </div>
+
+</div><!-- /mainContent -->
 
 <!-- 일정 상세 패널 -->
 <div class="detail-overlay" id="detailOverlay">
@@ -1644,6 +1647,9 @@ function updateAuthUI() {
   if (stab1) stab1.style.display = (s && s.role === 'admin') ? '' : 'none';
   const settingsBtn = document.getElementById('settingsBtn');
   if (settingsBtn) settingsBtn.style.display = (s && s.role === 'admin') ? '' : 'none';
+  // 메인 콘텐츠: 로그인 시에만 표시
+  const mainContent = document.getElementById('mainContent');
+  if (mainContent) mainContent.style.display = s ? '' : 'none';
   // 삭제 버튼 표시 여부 반영을 위해 앨범 재렌더
   renderPhotoAlbum();
 }
@@ -1705,6 +1711,8 @@ async function init() {
   await Promise.all([loadRemoteEvents(), loadPhotoAlbum()]);
   renderCalendar();
   renderPhotoAlbum();
+  // 비로그인 상태면 자동으로 로그인 모달 표시
+  if (!getSession()) openLoginModal();
 }
 
 init();
