@@ -12,12 +12,5 @@
     "passwordHash": "efd801b902c7d4d89a43aac17bbfb9f1f683825838474493c79a2d8903c23cf7",
     "role": "member",
     "createdAt": "2026-03-08"
-  },
-  {
-    "username": "baebae86",
-    "name": "배지형",
-    "passwordHash": "01bb4f0c6e0809774e7b3b5125f46607e34f16398b885bfc3ef23ace99ef9384",
-    "role": "member",
-    "createdAt": "2026-03-08"
   }
 ]
