@@ -5,5 +5,12 @@
     "passwordHash": "2175c09f4516e0af7f1a75748aed378528f2df25a7214169342cad20ccb20e0e",
     "role": "admin",
     "createdAt": "2026-03-08"
+  },
+  {
+    "username": "hubmath",
+    "name": "정현식",
+    "passwordHash": "efd801b902c7d4d89a43aac17bbfb9f1f683825838474493c79a2d8903c23cf7",
+    "role": "member",
+    "createdAt": "2026-03-08"
   }
 ]
