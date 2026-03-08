@@ -242,17 +242,57 @@
     .add-form-wrap { margin: 14px 12px 0; }
     .detail-header, .detail-body { padding: 13px; }
   }
+
+  /* ── 로그인 버튼 / 유저 칩 ── */
+  .login-btn { position: absolute; top: 14px; right: 16px; background: rgba(255,255,255,0.9); border: none; border-radius: 20px; padding: 7px 16px; font-size: .78rem; font-weight: 800; cursor: pointer; color: #c04070; font-family: 'Nanum Gothic', sans-serif; box-shadow: 0 2px 8px rgba(0,0,0,0.12); transition: all .2s; }
+  .login-btn:hover { background: white; box-shadow: 0 3px 12px rgba(0,0,0,0.18); }
+  .user-chip { position: absolute; top: 14px; right: 16px; display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.9); border-radius: 20px; padding: 6px 12px; font-size: .78rem; font-weight: 800; color: #c04070; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+  .user-chip-name { max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .user-logout-btn { background: none; border: none; cursor: pointer; color: #888; font-size: .72rem; padding: 2px 6px; border-radius: 10px; transition: all .2s; font-family: 'Nanum Gothic', sans-serif; }
+  .user-logout-btn:hover { background: #FFE8E8; color: #E05050; }
+
+  /* ── 인증 모달 ── */
+  .auth-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 800; align-items: center; justify-content: center; padding: 16px; }
+  .auth-overlay.open { display: flex; }
+  .auth-panel { background: white; border-radius: 20px; max-width: 400px; width: 100%; box-shadow: 0 8px 40px rgba(0,0,0,0.2); overflow: hidden; }
+  .auth-header { padding: 16px 20px; border-bottom: 2px solid #FFF0F4; display: flex; align-items: center; justify-content: space-between; font-weight: 800; color: #c04070; }
+  .auth-tabs { display: flex; border-bottom: 2px solid #F0EEF0; }
+  .auth-tab { flex: 1; padding: 11px 8px; text-align: center; font-size: .82rem; font-weight: 800; cursor: pointer; color: #AAA; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all .2s; }
+  .auth-tab.active { color: var(--mj); border-bottom-color: var(--mj); }
+  .auth-body { padding: 18px 20px 22px; }
+  .auth-code-box { background: #F5F5F5; border-radius: 10px; padding: 12px 14px; font-size: .75rem; color: #555; word-break: break-all; line-height: 1.6; margin-top: 10px; font-family: monospace; max-height: 100px; overflow-y: auto; }
+  .auth-code-label { font-size: .78rem; font-weight: 800; color: var(--mj); margin-bottom: 4px; margin-top: 12px; }
+
+  /* ── 설정 탭 ── */
+  .stab-row { display: flex; border-bottom: 2px solid #F0EEF0; margin: -18px -20px 16px; }
+  .stab { flex: 1; padding: 11px 8px; text-align: center; font-size: .8rem; font-weight: 800; cursor: pointer; color: #AAA; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all .2s; }
+  .stab.active { color: var(--mj); border-bottom-color: var(--mj); }
+  .user-list { display: flex; flex-direction: column; gap: 8px; }
+  .user-item { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #FFF8FB; border-radius: 10px; font-size: .8rem; }
+  .user-item-name { font-weight: 800; color: var(--text); }
+  .user-item-id { color: var(--text-light); font-size: .75rem; }
+  .user-item-role { margin-left: auto; padding: 2px 8px; border-radius: 8px; font-size: .7rem; font-weight: 800; flex-shrink: 0; }
+  .role-admin { background: #FFE8E8; color: #E05050; }
+  .role-member { background: #E8F5FF; color: #4AABFF; }
+  .user-item-del { background: none; border: none; cursor: pointer; color: #DDD; padding: 4px 6px; border-radius: 6px; transition: all .2s; font-size: .75rem; }
+  .user-item-del:hover { background: #FFE8E8; color: #E05050; }
+  .stab-section-title { font-size: .75rem; font-weight: 800; color: #AAA; text-transform: uppercase; letter-spacing: .04em; margin: 14px 0 6px; }
 </style>
 </head>
 <body>
 
-<header>
+<header style="position:relative">
   <div class="site-title">찬우 &amp; 민재의 캘린더 📅</div>
   <div class="site-subtitle">두 아이의 소중한 일정과 추억을 함께</div>
   <div class="legend">
     <div class="legend-item"><div class="legend-dot" style="background:var(--cw)"></div>찬우</div>
     <div class="legend-item"><div class="legend-dot" style="background:var(--mj)"></div>민재</div>
     <div class="legend-item"><div class="legend-dot" style="background:var(--both)"></div>찬우+민재</div>
+  </div>
+  <button class="login-btn" id="loginBtn" onclick="openLoginModal()">🔐 로그인</button>
+  <div class="user-chip" id="userChip" style="display:none">
+    <span class="user-chip-name" id="userChipName"></span>
+    <button class="user-logout-btn" onclick="logout()">로그아웃</button>
   </div>
 </header>
 
@@ -285,7 +325,7 @@
 <div class="album-section">
   <div class="album-title-bar">
     <h2 class="album-title">📸 포토앨범</h2>
-    <button class="upload-open-btn" onclick="openUpload()">+ 사진 업로드</button>
+    <button class="upload-open-btn" onclick="requireLogin(openUpload)">+ 사진 업로드</button>
   </div>
 </div>
 
@@ -393,27 +433,105 @@
 <div class="settings-overlay" id="settingsOverlay">
   <div class="settings-panel">
     <div class="settings-header">
-      <span>⚙️ GitHub 연동 설정</span>
+      <span>⚙️ 설정</span>
       <button class="detail-close" onclick="closeSettings()">✕</button>
     </div>
     <div class="settings-body">
-      <div class="settings-desc">
-        일정·사진을 GitHub에 저장하여 어디서나 동기화합니다.
-        <ol>
-          <li>GitHub → Settings → Developer settings</li>
-          <li>→ Personal access tokens → Fine-grained tokens</li>
-          <li>→ Generate new token</li>
-          <li>Repository: <code>cwmj-memories</code> 선택</li>
-          <li>Permissions → Contents: <strong>Read and write</strong></li>
-          <li>토큰 생성 후 아래에 붙여넣기</li>
-        </ol>
+      <div class="stab-row">
+        <div class="stab active" id="stab0" onclick="switchStab(0)">⚙️ GitHub 연동</div>
+        <div class="stab" id="stab1" onclick="switchStab(1)" style="display:none">👥 회원관리</div>
       </div>
-      <input id="tokenInput" class="form-input" type="password" placeholder="github_pat_...">
-      <div class="form-actions">
-        <button class="form-cancel-btn" onclick="clearToken()">토큰 삭제</button>
-        <button class="form-save-btn"   onclick="saveToken()">확인 &amp; 저장</button>
+      <div id="stabContent0">
+        <div class="settings-desc">
+          일정·사진을 GitHub에 저장하여 어디서나 동기화합니다.
+          <ol>
+            <li>GitHub → Settings → Developer settings</li>
+            <li>→ Personal access tokens → Fine-grained tokens</li>
+            <li>→ Generate new token</li>
+            <li>Repository: <code>cwmj-memories</code> 선택</li>
+            <li>Permissions → Contents: <strong>Read and write</strong></li>
+            <li>토큰 생성 후 아래에 붙여넣기</li>
+          </ol>
+        </div>
+        <input id="tokenInput" class="form-input" type="password" placeholder="github_pat_...">
+        <div class="form-actions">
+          <button class="form-cancel-btn" onclick="clearToken()">토큰 삭제</button>
+          <button class="form-save-btn"   onclick="saveToken()">확인 &amp; 저장</button>
+        </div>
+        <div id="tokenStatus"></div>
+        <div id="initSetupWrap" style="display:none">
+          <div class="stab-section-title" style="margin-top:16px">🚀 최초 관리자 계정 생성</div>
+          <div style="font-size:.78rem;color:#888;line-height:1.7;margin-bottom:10px;padding:10px 12px;background:#FFF8FB;border-radius:10px;border-left:3px solid var(--mj-mid)">
+            등록된 사용자가 없습니다. 최초 관리자 계정을 만들어주세요.
+          </div>
+          <input class="form-input" id="initName"     type="text"     placeholder="이름 (표시명)">
+          <input class="form-input" id="initUsername"  type="text"     placeholder="아이디">
+          <input class="form-input" id="initPassword"  type="password" placeholder="비밀번호">
+          <div class="form-actions">
+            <button class="form-save-btn" onclick="createInitAdmin()">관리자 계정 생성</button>
+          </div>
+        </div>
       </div>
-      <div id="tokenStatus"></div>
+      <div id="stabContent1" style="display:none">
+        <div class="stab-section-title">사용자 목록</div>
+        <div class="user-list" id="userList"><div style="color:#AAA;font-size:.8rem">불러오는 중...</div></div>
+
+        <div class="stab-section-title">코드로 승인</div>
+        <textarea class="form-input form-textarea" id="approveCodeInput" placeholder="회원이 전달한 코드를 붙여넣기" style="min-height:70px;margin-bottom:6px"></textarea>
+        <div class="form-actions" style="margin-top:0">
+          <button class="form-save-btn" onclick="approveRegCode()">승인</button>
+        </div>
+
+        <div class="stab-section-title">직접 추가</div>
+        <input class="form-input" id="directName" type="text" placeholder="이름 (표시명)">
+        <input class="form-input" id="directUsername" type="text" placeholder="아이디">
+        <input class="form-input" id="directPassword" type="password" placeholder="비밀번호">
+        <select class="form-input" id="directRole" style="margin-bottom:8px">
+          <option value="member">member</option>
+          <option value="admin">admin</option>
+        </select>
+        <div class="form-actions" style="margin-top:0">
+          <button class="form-save-btn" onclick="addUserDirect()">추가</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 인증 모달 -->
+<div class="auth-overlay" id="authOverlay">
+  <div class="auth-panel">
+    <div class="auth-header">
+      <span>🔐 로그인</span>
+      <button class="detail-close" onclick="closeLoginModal()">✕</button>
+    </div>
+    <div class="auth-tabs">
+      <div class="auth-tab active" id="authTabLogin" onclick="switchAuthTab(0)">로그인</div>
+      <div class="auth-tab" id="authTabReg" onclick="switchAuthTab(1)">회원가입 신청</div>
+    </div>
+    <div class="auth-body">
+      <div id="authLoginPane">
+        <input class="form-input" id="loginUsername" type="text" placeholder="아이디" autocomplete="username">
+        <input class="form-input" id="loginPassword" type="password" placeholder="비밀번호" autocomplete="current-password">
+        <div class="form-actions">
+          <button class="form-save-btn" onclick="doLogin()">로그인</button>
+        </div>
+      </div>
+      <div id="authRegPane" style="display:none">
+        <input class="form-input" id="regName" type="text" placeholder="이름 (표시명)">
+        <input class="form-input" id="regUsername" type="text" placeholder="아이디">
+        <input class="form-input" id="regPassword" type="password" placeholder="비밀번호">
+        <div class="form-actions">
+          <button class="form-save-btn" onclick="generateRegCode()">코드 생성</button>
+        </div>
+        <div id="regCodeWrap" style="display:none">
+          <div class="auth-code-label">📋 아래 코드를 관리자에게 전달하세요:</div>
+          <div class="auth-code-box" id="regCodeBox"></div>
+          <div class="form-actions" style="margin-top:8px">
+            <button class="form-cancel-btn" onclick="copyRegCode()">📋 복사</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -633,7 +751,7 @@ function closeDetail() { document.getElementById('detailOverlay').classList.remo
 let selectedWho = 'cw';
 
 document.getElementById('addEventBtn').onclick = () => {
-  if (document.getElementById('addFormWrap').style.display === 'none') showAddForm(); else hideAddForm();
+  if (document.getElementById('addFormWrap').style.display === 'none') requireLogin(showAddForm); else hideAddForm();
 };
 
 function showAddForm() {
@@ -1298,7 +1416,13 @@ function openSettings() {
   document.getElementById('tokenInput').placeholder = stored ? '새 토큰 입력 (현재 설정됨)' : 'github_pat_...';
   document.getElementById('tokenStatus').textContent = stored ? '✅ 토큰이 설정되어 있습니다' : '';
   document.getElementById('tokenStatus').style.color = '#50A050';
+  // 탭 초기화 (항상 GitHub 탭부터)
+  switchStab(0);
+  // admin 탭 표시 여부
+  const s = getSession();
+  document.getElementById('stab1').style.display = (s && s.role === 'admin') ? '' : 'none';
   document.getElementById('settingsOverlay').classList.add('open');
+  checkAndShowInitSetup();
 }
 function closeSettings() { document.getElementById('settingsOverlay').classList.remove('open'); }
 
@@ -1314,7 +1438,8 @@ async function saveToken() {
     if (res.ok) {
       setToken(val); st.textContent = '✅ 저장되었습니다!'; st.style.color = '#50A050';
       showToast('✅ GitHub 연동 완료!', 'ok');
-      setTimeout(async () => { closeSettings(); await loadRemoteEvents(); await loadPhotoAlbum(); renderCalendar(); renderPhotoAlbum(); }, 1200);
+      checkAndShowInitSetup();
+      setTimeout(async () => { await loadRemoteEvents(); await loadPhotoAlbum(); renderCalendar(); renderPhotoAlbum(); }, 1200);
     } else { st.textContent = '❌ 유효하지 않은 토큰'; st.style.color = '#E05050'; }
   } catch { st.textContent = '❌ 네트워크 오류'; st.style.color = '#E05050'; }
 }
@@ -1333,11 +1458,239 @@ document.getElementById('settingsOverlay').onclick = e => {
 };
 
 // ════════════════════════════════════════
+//  인증 시스템
+// ════════════════════════════════════════
+
+// 비밀번호 해시
+async function sha256hex(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+// 세션 관리 (sessionStorage)
+const getSession = () => { try { return JSON.parse(sessionStorage.getItem('cwmj_session')); } catch { return null; } };
+const setSession = s => sessionStorage.setItem('cwmj_session', JSON.stringify(s));
+const clearSession = () => sessionStorage.removeItem('cwmj_session');
+
+// 사용자 목록 로드/저장
+let usersSha = '';
+async function loadUsers() {
+  const d = await ghGet('data/users.json');
+  usersSha = d.sha || '';
+  return d.content ? JSON.parse(fromB64(d.content)) : [];
+}
+async function saveUsers(users) {
+  const fresh = await ghGet('data/users.json');
+  if (fresh.sha) usersSha = fresh.sha;
+  const res = await ghPut('data/users.json', toB64(JSON.stringify(users, null, 2)), '사용자 목록 업데이트', usersSha);
+  usersSha = res.content.sha;
+}
+
+// 로그인
+async function doLogin() {
+  const username = document.getElementById('loginUsername').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  if (!username || !password) { showToast('아이디와 비밀번호를 입력해주세요'); return; }
+  try {
+    const users = await loadUsers();
+    const hash  = await sha256hex(password);
+    const user  = users.find(u => u.username === username && u.passwordHash === hash);
+    if (!user) { showToast('❌ 아이디 또는 비밀번호가 틀렸습니다', 'error'); return; }
+    setSession({ username: user.username, name: user.name, role: user.role });
+    closeLoginModal();
+    updateAuthUI();
+    showToast(`✅ 환영합니다, ${user.name}님!`, 'ok');
+  } catch(e) { showToast('❌ 로그인 오류: ' + e.message, 'error'); }
+}
+
+// 회원가입 코드 생성
+async function generateRegCode() {
+  const name     = document.getElementById('regName').value.trim();
+  const username = document.getElementById('regUsername').value.trim();
+  const password = document.getElementById('regPassword').value;
+  if (!name || !username || !password) { showToast('모든 항목을 입력해주세요'); return; }
+  const hash = await sha256hex(password);
+  const data = { username, name, passwordHash: hash, requestedAt: new Date().toISOString() };
+  const code = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+  document.getElementById('regCodeBox').textContent = code;
+  document.getElementById('regCodeWrap').style.display = '';
+}
+
+function copyRegCode() {
+  const code = document.getElementById('regCodeBox').textContent;
+  navigator.clipboard.writeText(code).then(() => showToast('📋 복사됨!', 'ok')).catch(() => showToast('복사 실패 - 직접 선택해 복사해주세요'));
+}
+
+// 관리자: 코드로 승인
+async function approveRegCode() {
+  const code = document.getElementById('approveCodeInput').value.trim();
+  if (!code) { showToast('코드를 입력해주세요'); return; }
+  if (!getToken()) { showToast('⚙️ GitHub 토큰이 필요합니다'); return; }
+  try {
+    const data  = JSON.parse(decodeURIComponent(escape(atob(code))));
+    const users = await loadUsers();
+    if (users.find(u => u.username === data.username)) { showToast('❌ 이미 존재하는 아이디입니다', 'error'); return; }
+    users.push({ username: data.username, name: data.name, passwordHash: data.passwordHash, role: 'member', createdAt: new Date().toISOString().slice(0,10) });
+    await saveUsers(users);
+    document.getElementById('approveCodeInput').value = '';
+    showToast(`✅ ${data.name}(${data.username}) 승인 완료!`, 'ok');
+    renderUserList(users);
+  } catch(e) { showToast('❌ 코드 오류: ' + e.message, 'error'); }
+}
+
+// 관리자: 직접 추가
+async function addUserDirect() {
+  const name     = document.getElementById('directName').value.trim();
+  const username = document.getElementById('directUsername').value.trim();
+  const password = document.getElementById('directPassword').value;
+  const role     = document.getElementById('directRole').value;
+  if (!name || !username || !password) { showToast('모든 항목을 입력해주세요'); return; }
+  if (!getToken()) { showToast('⚙️ GitHub 토큰이 필요합니다'); return; }
+  try {
+    const hash  = await sha256hex(password);
+    const users = await loadUsers();
+    if (users.find(u => u.username === username)) { showToast('❌ 이미 존재하는 아이디입니다', 'error'); return; }
+    users.push({ username, name, passwordHash: hash, role, createdAt: new Date().toISOString().slice(0,10) });
+    await saveUsers(users);
+    document.getElementById('directName').value = '';
+    document.getElementById('directUsername').value = '';
+    document.getElementById('directPassword').value = '';
+    showToast(`✅ ${name}(${username}) 추가 완료!`, 'ok');
+    renderUserList(users);
+  } catch(e) { showToast('❌ 오류: ' + e.message, 'error'); }
+}
+
+// 관리자: 사용자 삭제
+async function deleteUser(username) {
+  const s = getSession();
+  if (s && s.username === username) { showToast('❌ 본인 계정은 삭제할 수 없습니다', 'error'); return; }
+  if (!confirm(`${username} 계정을 삭제할까요?`)) return;
+  try {
+    const users = await loadUsers();
+    await saveUsers(users.filter(u => u.username !== username));
+    showToast('삭제 완료', 'ok');
+    renderUserList(users.filter(u => u.username !== username));
+  } catch(e) { showToast('❌ 오류: ' + e.message, 'error'); }
+}
+
+// 사용자 목록 렌더링
+function renderUserList(users) {
+  const el = document.getElementById('userList');
+  if (!users.length) { el.innerHTML = '<div style="color:#AAA;font-size:.8rem">등록된 사용자가 없습니다</div>'; return; }
+  el.innerHTML = users.map(u => `
+    <div class="user-item">
+      <span class="user-item-name">${esc(u.name)}</span>
+      <span class="user-item-id">@${esc(u.username)}</span>
+      <span class="user-item-role role-${u.role}">${u.role}</span>
+      <button class="user-item-del" onclick="deleteUser('${esc(u.username)}')">🗑</button>
+    </div>`).join('');
+}
+
+// 초기 설정: users.json이 비었을 때만 폼 표시
+async function checkAndShowInitSetup() {
+  if (!getToken()) { document.getElementById('initSetupWrap').style.display = 'none'; return; }
+  try {
+    const users = await loadUsers();
+    document.getElementById('initSetupWrap').style.display = users.length === 0 ? '' : 'none';
+  } catch(e) { document.getElementById('initSetupWrap').style.display = 'none'; }
+}
+
+async function createInitAdmin() {
+  const name     = document.getElementById('initName').value.trim();
+  const username = document.getElementById('initUsername').value.trim();
+  const password = document.getElementById('initPassword').value;
+  if (!name || !username || !password) { showToast('모든 항목을 입력해주세요'); return; }
+  if (!getToken()) { showToast('⚙️ GitHub 토큰을 먼저 설정해주세요'); return; }
+  try {
+    const users = await loadUsers();
+    if (users.length > 0) { showToast('❌ 이미 사용자가 존재합니다', 'error'); document.getElementById('initSetupWrap').style.display = 'none'; return; }
+    const hash = await sha256hex(password);
+    users.push({ username, name, passwordHash: hash, role: 'admin', createdAt: new Date().toISOString().slice(0,10) });
+    await saveUsers(users);
+    document.getElementById('initSetupWrap').style.display = 'none';
+    document.getElementById('initName').value = '';
+    document.getElementById('initUsername').value = '';
+    document.getElementById('initPassword').value = '';
+    showToast(`✅ 관리자 계정 생성 완료! 이제 로그인하세요`, 'ok');
+  } catch(e) { showToast('❌ 오류: ' + e.message, 'error'); }
+}
+
+// requireLogin: 로그인 필요한 기능에 래핑
+function requireLogin(cb) {
+  if (!getSession()) { showToast('🔐 로그인이 필요합니다'); openLoginModal(); return; }
+  cb();
+}
+
+// 로그아웃
+function logout() {
+  clearSession();
+  updateAuthUI();
+  showToast('로그아웃 되었습니다');
+}
+
+// UI 업데이트
+function updateAuthUI() {
+  const s = getSession();
+  document.getElementById('loginBtn').style.display  = s ? 'none' : '';
+  document.getElementById('userChip').style.display  = s ? '' : 'none';
+  if (s) document.getElementById('userChipName').textContent = s.name;
+  // 회원관리 탭: admin만 표시
+  const stab1 = document.getElementById('stab1');
+  if (stab1) stab1.style.display = (s && s.role === 'admin') ? '' : 'none';
+}
+
+// 로그인 모달
+function openLoginModal() {
+  document.getElementById('loginUsername').value = '';
+  document.getElementById('loginPassword').value = '';
+  switchAuthTab(0);
+  document.getElementById('authOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('loginUsername').focus(), 120);
+}
+function closeLoginModal() { document.getElementById('authOverlay').classList.remove('open'); }
+
+document.getElementById('authOverlay').onclick = e => {
+  if (e.target === document.getElementById('authOverlay')) closeLoginModal();
+};
+
+// 인증 탭 전환
+function switchAuthTab(idx) {
+  document.getElementById('authTabLogin').classList.toggle('active', idx === 0);
+  document.getElementById('authTabReg').classList.toggle('active', idx === 1);
+  document.getElementById('authLoginPane').style.display = idx === 0 ? '' : 'none';
+  document.getElementById('authRegPane').style.display   = idx === 1 ? '' : 'none';
+  if (idx === 1) document.getElementById('regCodeWrap').style.display = 'none';
+}
+
+// 설정 탭 전환
+function switchStab(idx) {
+  [0,1].forEach(i => {
+    document.getElementById(`stab${i}`).classList.toggle('active', i === idx);
+    document.getElementById(`stabContent${i}`).style.display = i === idx ? '' : 'none';
+  });
+  if (idx === 1) {
+    loadUsers().then(renderUserList).catch(() => {
+      document.getElementById('userList').innerHTML = '<div style="color:#E05050;font-size:.8rem">불러오기 실패</div>';
+    });
+  }
+}
+
+// ESC로 인증 모달 닫기 (기존 keydown에 추가)
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.getElementById('authOverlay').classList.contains('open')) closeLoginModal();
+});
+
+// Enter로 로그인
+document.getElementById('loginPassword').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+document.getElementById('loginUsername').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+// ════════════════════════════════════════
 //  초기화
 // ════════════════════════════════════════
 async function init() {
   curYear  = today.getFullYear();
   curMonth = today.getMonth();
+  updateAuthUI();
   renderCalendar();     // 캐시로 즉시 렌더
   renderPhotoAlbum();   // 캐시로 즉시 렌더
   await Promise.all([loadRemoteEvents(), loadPhotoAlbum()]);
