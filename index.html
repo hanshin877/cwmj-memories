@@ -733,7 +733,7 @@ function renderDetailBody(dateStr) {
     const before = lbPhotos.length;
     (e.photos||[]).forEach(src => lbPhotos.push(src));
     const gallery = (e.photos||[]).map((src,pi) => `<img src="${src}" alt="사진" onclick="openLb(${before+pi})" loading="lazy">`).join('');
-    const del = e.remote ? `<button class="ev-delete-btn" onclick="deleteEvent('${esc(e.id)}')">🗑</button>` : '';
+    const del = (e.remote && getSession()) ? `<button class="ev-delete-btn" onclick="deleteEvent('${esc(e.id)}')">🗑</button>` : '';
     return `<div class="detail-event ev-${e.who}">
       <div class="detail-ev-who"><span class="who-badge badge-${e.who}">${WHO_LABEL[e.who]}</span>${del}</div>
       <div class="detail-ev-title">${esc(e.title)}</div>
@@ -897,7 +897,7 @@ function renderPhotoAlbum() {
       (entry.files||[]).forEach(f => albumLbPhotos.push(RAW + f));
 
       const whoLabel = WHO_LABEL[entry.who] || entry.who;
-      const del = `<button class="album-entry-del" onclick="deletePhotoEntry('${esc(entry.id)}')">🗑</button>`;
+      const del = getSession() ? `<button class="album-entry-del" onclick="deletePhotoEntry('${esc(entry.id)}')">🗑</button>` : '';
 
       const gridItems = (entry.files||[]).map((f,pi) =>
         `<div class="album-gallery-item" onclick="openAlbumLb(${before+pi})">
@@ -1639,6 +1639,8 @@ function updateAuthUI() {
   if (stab1) stab1.style.display = (s && s.role === 'admin') ? '' : 'none';
   const settingsBtn = document.getElementById('settingsBtn');
   if (settingsBtn) settingsBtn.style.display = (s && s.role === 'admin') ? '' : 'none';
+  // 삭제 버튼 표시 여부 반영을 위해 앨범 재렌더
+  renderPhotoAlbum();
 }
 
 // 로그인 모달
