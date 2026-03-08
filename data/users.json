@@ -1,1 +1,9 @@
-[]
+[
+  {
+    "username": "hanshin877",
+    "name": "정현식",
+    "passwordHash": "2175c09f4516e0af7f1a75748aed378528f2df25a7214169342cad20ccb20e0e",
+    "role": "admin",
+    "createdAt": "2026-03-08"
+  }
+]
