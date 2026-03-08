@@ -12,5 +12,12 @@
     "passwordHash": "efd801b902c7d4d89a43aac17bbfb9f1f683825838474493c79a2d8903c23cf7",
     "role": "member",
     "createdAt": "2026-03-08"
+  },
+  {
+    "username": "baebae86",
+    "name": "배지형",
+    "passwordHash": "f96e2817749cc9ce2dcb826e451a7ffe173d3327d37a7d9db7788cff7d3cfcbf",
+    "role": "member",
+    "createdAt": "2026-03-08"
   }
 ]
